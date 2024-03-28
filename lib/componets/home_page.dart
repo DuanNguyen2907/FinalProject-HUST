@@ -1,29 +1,33 @@
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
-  // List<PostData> posts = [
-  //   PostData(
-  //     author: 'John Doe',
-  //     timeAgo: '2 hours ago',
-  //     content: 'This is a sample post on Flutter.',
-  //     likes: 10,
-  //     comments: 5,
-  //     shares: 2,
-  //     imageUrl: "https://example.com/image1.jpg",
-  //     avatarUrl: "https://example.com/avatar1.jpg",
-  //   ),
-  //   PostData(
-  //     author: 'Jane Smith',
-  //     timeAgo: '1 day ago',
-  //     content: 'Another post for testing purposes.',
-  //     likes: 20,
-  //     comments: 8,
-  //     shares: 3,
-  //     imageUrl: "https://example.com/image2.jpg",
-  //     avatarUrl: "https://example.com/avatar2.jpg",
-  //   ),
-  //   // Add more posts here
-  // ];
+  final List<Post> posts = [
+    Post(
+      author: 'John Doe',
+      timeAgo: '2 hours ago',
+      content: 'This is a sample post on Flutter.',
+      likes: 10,
+      comments: 5,
+      shares: 2,
+      imageUrl:
+          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
+      avatarUrl:
+          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
+    ),
+    Post(
+      author: 'John Doe2',
+      timeAgo: '22 hours ago',
+      content: 'This is a sample post on Flutter2.',
+      likes: 10,
+      comments: 5,
+      shares: 2,
+      imageUrl:
+          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
+      avatarUrl:
+          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
+    )
+    // Add more posts here
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -31,38 +35,40 @@ class Home extends StatelessWidget {
       appBar: AppBar(
         title: Text('Home'),
       ),
-      body: ListView(
-        children: [
-          PostWidget(
-            author: 'John Doe',
-            timeAgo: '2 hours ago',
-            content: 'This is a sample post on Flutter.',
-            likes: 10,
-            comments: 5,
-            shares: 2,
-            imageUrl:
-                "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-            avatarUrl:
-                "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-          ),
-          // Add more PostWidget here
-        ],
+      body: ListView.builder(
+        itemCount: posts.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () {
+              // Handle tap event to navigate to post detail
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PostDetail(post: posts[index]),
+                ),
+              );
+            },
+            child: PostWidget(
+              post: posts[index],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class PostWidget extends StatelessWidget {
+class Post {
   final String author;
   final String timeAgo;
   final String content;
   final int likes;
   final int comments;
   final int shares;
-  final String imageUrl; // Thêm trường để chứa URL của hình ảnh
-  final String avatarUrl; // Thêm trường để chứa URL của avatar
+  final String imageUrl;
+  final String avatarUrl;
 
-  PostWidget({
+  Post({
     required this.author,
     required this.timeAgo,
     required this.content,
@@ -71,6 +77,14 @@ class PostWidget extends StatelessWidget {
     required this.shares,
     required this.imageUrl,
     required this.avatarUrl,
+  });
+}
+
+class PostWidget extends StatelessWidget {
+  final Post post;
+
+  PostWidget({
+    required this.post,
   });
 
   @override
@@ -82,26 +96,72 @@ class PostWidget extends StatelessWidget {
         children: [
           ListTile(
             leading: CircleAvatar(
-              // Thêm avatar người dùng
-              backgroundImage: NetworkImage(avatarUrl),
+              backgroundImage: NetworkImage(post.avatarUrl),
             ),
-            title: Text(author),
-            subtitle: Text(timeAgo),
+            title: Text(post.author),
+            subtitle: Text(post.timeAgo),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(content),
+            child: Text(post.content),
           ),
-          Image.network(imageUrl), // Thêm hình ảnh vào bài post
+          Image.network(post.imageUrl),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$likes Likes'),
-              Text('$comments Comments'),
-              Text('$shares Shares'),
+              Text('${post.likes} Likes'),
+              Text('${post.comments} Comments'),
+              Text('${post.shares} Shares'),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class PostDetail extends StatelessWidget {
+  final Post post;
+
+  PostDetail({
+    required this.post,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Post Detail'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage(post.avatarUrl),
+              ),
+              title: Text(post.author),
+              subtitle: Text(post.timeAgo),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(post.content),
+            ),
+            Image.network(post.imageUrl),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${post.likes} Likes'),
+                  Text('${post.comments} Comments'),
+                  Text('${post.shares} Shares'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
