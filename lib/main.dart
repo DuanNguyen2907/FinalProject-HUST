@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
+import 'pages/search.dart';
 
 void main(List<String> args) {
   runApp(const MaterialApp(
@@ -69,27 +70,7 @@ class _NavigationExampleState extends State<NavigationExample> {
         Home(),
 
         /// Notifications page
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Column(
-            children: <Widget>[
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.notifications_sharp),
-                  title: Text('Notification 1'),
-                  subtitle: Text('This is a notification'),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.notifications_sharp),
-                  title: Text('Notification 2'),
-                  subtitle: Text('This is a notification'),
-                ),
-              ),
-            ],
-          ),
-        ),
+        SearchScreen(),
 
         /// Messages page
         ListView.builder(
