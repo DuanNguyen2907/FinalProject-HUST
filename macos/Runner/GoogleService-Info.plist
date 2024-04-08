@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyANLTaWdASjiYcvTr2jjscpmcjnE0jx1NM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>623028009490</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.appProject.RunnerTests</string>
+	<key>PROJECT_ID</key>
+	<string>android-app-df284</string>
+	<key>STORAGE_BUCKET</key>
+	<string>android-app-df284.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:623028009490:ios:cc1e75d0fcf8187f0b76cb</string>
+	<key>DATABASE_URL</key>
+	<string>https://android-app-df284-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+</dict>
+</plist>

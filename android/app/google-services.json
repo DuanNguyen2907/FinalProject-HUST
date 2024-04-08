@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "623028009490",
+    "firebase_url": "https://android-app-df284-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "android-app-df284",
+    "storage_bucket": "android-app-df284.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:623028009490:android:bfad6e327e5cf8a40b76cb",
+        "android_client_info": {
+          "package_name": "com.example.app_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDn6mkzKRm0C4dUblbq-vdNMQoO4cGqGRQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
