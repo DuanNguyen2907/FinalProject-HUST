@@ -1,49 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/post.dart';
 import '../pages/post_detail_page.dart';
 import '../widgets/post.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchPage extends StatefulWidget {
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends State<SearchPage> {
   String query = '';
-
-  final List<Post> posts = [
-    Post(
-      author: 'John Doe',
-      timeAgo: '2 hours ago',
-      content: 'This is a sample post on Flutter.',
-      likes: 10,
-      comments: 5,
-      shares: 2,
-      imageUrl:
-          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-      avatarUrl:
-          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-    ),
-    Post(
-      author: 'John Doe2',
-      timeAgo: '22 hours ago',
-      content: 'This is a sample post on Flutter2.',
-      likes: 10,
-      comments: 5,
-      shares: 2,
-      imageUrl:
-          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-      avatarUrl:
-          "https://img.thuthuatphanmem.vn/uploads/2018/10/26/anh-dep-cau-rong-da-nang-viet-nam_055418962.jpg",
-    )
-    // Add more posts here
-  ];
-
-  void onQueryChanged(String newQuery) {
-    setState(() {
-      query = newQuery;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,31 +29,11 @@ class _SearchScreenState extends State<SearchScreen> {
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate:
-                      SearchBar(query: query, onQueryChanged: onQueryChanged),
+                  delegate: SearchBar(query: query),
                 );
               },
             ),
           ],
-        ),
-        body: ListView.builder(
-          itemCount: posts.length,
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () {
-                // Handle tap event to navigate to post detail
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PostDetail(post: posts[index]),
-                  ),
-                );
-              },
-              child: PostWidget(
-                post: posts[index],
-              ),
-            );
-          },
         ),
       ),
     );
@@ -94,10 +41,10 @@ class _SearchScreenState extends State<SearchScreen> {
 }
 
 class SearchBar extends SearchDelegate<String> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String query;
-  final ValueChanged<String> onQueryChanged;
 
-  SearchBar({required this.query, required this.onQueryChanged});
+  SearchBar({required this.query});
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -106,7 +53,6 @@ class SearchBar extends SearchDelegate<String> {
         icon: Icon(Icons.clear),
         onPressed: () {
           query = '';
-          onQueryChanged('');
           close(context, '');
         },
       ),
@@ -125,10 +71,43 @@ class SearchBar extends SearchDelegate<String> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return Container(
-      child: Center(
-        child: Text('Search Results'),
-      ),
+    return FutureBuilder<List<Post>>(
+      future: _firestore
+          .collection('posts')
+          .where('context', isGreaterThanOrEqualTo: query)
+          .get()
+          .then((querySnapshot) =>
+              querySnapshot.docs.map((doc) => Post.fromDocument(doc)).toList()),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (snapshot.data!.isEmpty) {
+          return Center(child: Text('No results found'));
+        } else {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () {
+                  // Xử lý sự kiện nhấn để chuyển đến chi tiết bài post
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PostDetail(post: snapshot.data![index]),
+                    ),
+                  );
+                },
+                child: PostWidget(
+                  post: snapshot.data![index],
+                ),
+              );
+            },
+          );
+        }
+      },
     );
   }
 
@@ -140,7 +119,6 @@ class SearchBar extends SearchDelegate<String> {
         return ListTile(
           title: Text('$query $index'),
           onTap: () {
-            onQueryChanged(query);
             close(context, query);
           },
         );

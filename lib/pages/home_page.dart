@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../services/database.dart';
+import '../services/postService.dart';
 import '../pages/post_detail_page.dart';
 import '../domain/post.dart';
 import '../widgets/post.dart';
 
 class Home extends StatelessWidget {
-  DatabaseService dbService = DatabaseService();
+  PostService postService = PostService();
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class Home extends StatelessWidget {
         title: Text('Home'),
       ),
       body: FutureBuilder<List<Post>>(
-        future: dbService.getPosts(),
+        future: postService.getPosts(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(

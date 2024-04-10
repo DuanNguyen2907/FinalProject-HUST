@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/post.dart';
+import './userService.dart';
 
-class DatabaseService {
+class PostService {
+  UserService userService = UserService();
   Future<List<Post>> getPosts() async {
     final postsRef = FirebaseFirestore.instance.collection('posts');
     final postsSnapshot = await postsRef.get();
@@ -9,13 +11,14 @@ class DatabaseService {
       final likesRef = doc.reference.collection('liked');
       final likesSnapshot = await likesRef.get();
       final numLikes = likesSnapshot.size;
+      final author = await userService.getUserById(doc['authorId']);
 
       return Post(
-        author: 'DuanNC',
+        author: author.username,
         timeAgo: "1 ngày trước",
         content: doc['context'].toString(),
         likes: numLikes,
-        comments: 3,
+        comments: doc['comments'],
         shares: 3,
         imageUrl: doc['imageUrls'][0],
         avatarUrl:

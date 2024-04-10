@@ -31,7 +31,7 @@ class PostWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${post.likes} Likes'),
-              Text('${post.comments} Comments'),
+              Text('${post.comments.length} Comments'),
               Text('${post.shares} Shares'),
             ],
           ),

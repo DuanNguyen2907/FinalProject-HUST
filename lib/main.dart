@@ -77,7 +77,7 @@ class _NavigationExampleState extends State<NavigationExample> {
         Home(),
 
         /// Notifications page
-        SearchScreen(),
+        SearchPage(),
 
         /// Messages page
         ListView.builder(
