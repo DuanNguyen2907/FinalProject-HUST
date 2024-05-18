@@ -1,3 +1,4 @@
+import 'package:app_project/services/postService.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/post.dart';
@@ -10,8 +11,6 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchPage> {
-  String query = '';
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,7 +28,7 @@ class _SearchScreenState extends State<SearchPage> {
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: SearchBar(query: query),
+                  delegate: SearchBar(),
                 );
               },
             ),
@@ -41,10 +40,7 @@ class _SearchScreenState extends State<SearchPage> {
 }
 
 class SearchBar extends SearchDelegate<String> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String query;
-
-  SearchBar({required this.query});
+  final PostService postService = PostService();
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -72,12 +68,7 @@ class SearchBar extends SearchDelegate<String> {
   @override
   Widget buildResults(BuildContext context) {
     return FutureBuilder<List<Post>>(
-      future: _firestore
-          .collection('posts')
-          .where('context', isGreaterThanOrEqualTo: query)
-          .get()
-          .then((querySnapshot) =>
-              querySnapshot.docs.map((doc) => Post.fromDocument(doc)).toList()),
+      future: postService.searchPosts(query),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -102,6 +93,7 @@ class SearchBar extends SearchDelegate<String> {
                 },
                 child: PostWidget(
                   post: snapshot.data![index],
+                  postId: snapshot.data![index].id,
                 ),
               );
             },
@@ -119,7 +111,8 @@ class SearchBar extends SearchDelegate<String> {
         return ListTile(
           title: Text('$query $index'),
           onTap: () {
-            close(context, query);
+            query = '$query $index';
+            showResults(context);
           },
         );
       },

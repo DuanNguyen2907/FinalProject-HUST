@@ -1,12 +1,12 @@
+import 'package:app_project/domain/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../domain/user.dart';
 
 class UserService {
-  Future<User> getUserById(String id) async {
+  Future<AAA?> getUserById(String id) async {
     final userRef = FirebaseFirestore.instance.collection('users');
     final userDoc = await userRef.doc(id).get();
     if (userDoc.exists) {
-      return User(
+      AAA userInfo = AAA(
         address: userDoc['address'],
         username: userDoc['username'],
         dob: userDoc['dob'],
@@ -14,8 +14,9 @@ class UserService {
         phone: userDoc['phone'],
         avatar: userDoc['avatar'],
       );
+      return userInfo;
     } else {
-      throw Exception('User not found');
+      return null; // or throw an exception if you prefer
     }
   }
 }

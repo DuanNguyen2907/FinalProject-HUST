@@ -1,3 +1,4 @@
+import 'package:app_project/domain/tag.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Post {
@@ -7,8 +8,10 @@ class Post {
   final int likes;
   final List comments;
   final int shares;
-  final String imageUrl;
+  final List imageUrl;
   final String avatarUrl;
+  final List<Tag> tags;
+  final String id;
 
   Post({
     required this.author,
@@ -19,6 +22,8 @@ class Post {
     required this.shares,
     required this.imageUrl,
     required this.avatarUrl,
+    required this.tags,
+    required this.id,
   });
 
   factory Post.fromDocument(DocumentSnapshot doc) {
@@ -31,6 +36,23 @@ class Post {
       shares: doc['shares'],
       imageUrl: doc['imageUrl'],
       avatarUrl: doc['avatarUrl'],
+      tags: doc['tags'],
+      id: doc['id'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'author': author,
+      'timeAgo': timeAgo,
+      'content': content,
+      'likes': likes,
+      'comments': comments,
+      'shares': shares,
+      'imageUrl': imageUrl,
+      'avatarUrl': avatarUrl,
+      'tags': tags,
+      'id': id,
+    };
   }
 }

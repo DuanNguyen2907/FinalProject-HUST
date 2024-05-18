@@ -1,28 +1,244 @@
+import 'dart:core';
+import 'dart:io';
+
+import 'package:app_project/domain/tag.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 import '../domain/post.dart';
 import './userService.dart';
+import './tagService.dart';
 
 class PostService {
   UserService userService = UserService();
+  TagService tagService = TagService();
+
   Future<List<Post>> getPosts() async {
     final postsRef = FirebaseFirestore.instance.collection('posts');
     final postsSnapshot = await postsRef.get();
     final posts = postsSnapshot.docs.map((doc) async {
+      final id = doc.id;
+      // get num likes
+      final likesRef = doc.reference.collection('liked');
+      final likesSnapshot = await likesRef.get();
+      final numLikes = likesSnapshot.size;
+
+      // get createAt
+      final Timestamp createAt;
+      createAt = doc["createAt"];
+      DateTime createAtDateTime = createAt.toDate();
+      DateTime now = DateTime.now();
+      Duration difference = now.difference(createAtDateTime);
+      String timeAgo = '';
+      if (difference.inDays < 31) {
+        timeAgo = difference.toString() + " ngày trước";
+      } else if (difference.inDays < 365) {
+        difference = difference ~/ 30;
+        timeAgo = difference.toString() + " tháng trước";
+      } else {
+        difference = difference ~/ 365;
+        timeAgo = difference.toString() + " năm trước";
+      }
+
+      // get author info
+      final author = await userService.getUserById(doc['authorId']);
+
+      List<Future<Tag>> tagFutures = [];
+      for (int i = 0; i < doc['tags'].length; i++) {
+        tagFutures.add(tagService.getTagById(doc['tags'][i]));
+      }
+      final tags = await Future.wait(tagFutures);
+      return Post(
+        id: id,
+        author: author!.username,
+        timeAgo: timeAgo,
+        content: doc['content'].toString(),
+        likes: numLikes,
+        comments: doc['comments'],
+        shares: 3,
+        imageUrl: doc['imageUrls'],
+        avatarUrl: author.avatar,
+        tags: tags,
+      );
+    }).toList();
+
+    return await Future.wait(posts);
+  }
+
+  Future<List<Post>> searchPosts(String keyword) async {
+    final QuerySnapshot querySnapshot =
+        await FirebaseFirestore.instance.collection('posts').get();
+
+    final posts = await Future.wait(querySnapshot.docs.map((doc) async {
       final likesRef = doc.reference.collection('liked');
       final likesSnapshot = await likesRef.get();
       final numLikes = likesSnapshot.size;
       final author = await userService.getUserById(doc['authorId']);
 
+      final Timestamp createAt;
+      createAt = doc["createAt"];
+      DateTime createAtDateTime = createAt.toDate();
+      DateTime now = DateTime.now();
+      Duration difference = now.difference(createAtDateTime);
+      String timeAgo = '';
+      if (difference.inDays < 31) {
+        timeAgo = difference.toString() + " ngày trước";
+      } else if (difference.inDays < 365) {
+        difference = difference ~/ 30;
+        timeAgo = difference.toString() + " tháng trước";
+      } else {
+        difference = difference ~/ 365;
+        timeAgo = difference.toString() + " năm trước";
+      }
+
+      List<Future<Tag>> tagFutures = [];
+      for (int i = 0; i < doc['tags'].length; i++) {
+        tagFutures.add(tagService.getTagById(doc['tags'][i]));
+      }
+      final tags = await Future.wait(tagFutures);
+
       return Post(
-        author: author.username,
-        timeAgo: "1 ngày trước",
-        content: doc['context'].toString(),
+        id: doc.id,
+        author: author!.username,
+        timeAgo: timeAgo,
+        content: doc['content'].toString(),
         likes: numLikes,
         comments: doc['comments'],
         shares: 3,
-        imageUrl: doc['imageUrls'][0],
-        avatarUrl:
-            'https://vn.images.search.yahoo.com/yhs/view;_ylt=AwrKDyXZ_xFm_b8p232.LIpQ;_ylu=c2VjA3NyBHNsawNpbWcEb2lkA2FhOWIxYWE4YjRmYzRjNDcwM2JkYjdmODg0ZDFkMDUzBGdwb3MDMQRpdANiaW5n?back=https%3A%2F%2Fvn.images.search.yahoo.com%2Fyhs%2Fsearch%3Fp%3D%25E1%25BA%25A3nh%26ei%3DUTF-8%26type%3Dmsff_9373_FFW_ZZ%26fr%3Dyhs-iba-3%26hsimp%3Dyhs-3%26hspart%3Diba%26tab%3Dorganic%26ri%3D1&w=2048&h=1368&imgurl=khoinguonsangtao.vn%2Fwp-content%2Fuploads%2F2022%2F08%2Fhinh-anh-meo-cute-doi-mat-to-tron-den-lay-de-thuong.jpg&rurl=https%3A%2F%2Fcdgdbentre.edu.vn%2Fhinh-nen-hinh-anh-meo-de-thuong-1inhdqp0%2F&size=318.8KB&p=%E1%BA%A3nh&oid=aa9b1aa8b4fc4c4703bdb7f884d1d053&fr2=&fr=yhs-iba-3&tt=Top+v%E1%BB%9Bi+h%C6%A1n+65+v%E1%BB%81+h%C3%ACnh+n%E1%BB%81n+h%C3%ACnh+%E1%BA%A3nh+m%C3%A8o+d%E1%BB%85+th%C6%B0%C6%A1ng+-+cdgdbentre.edu.vn&b=0&ni=160&no=1&ts=&tab=organic&sigr=iBmASqrqkD3p&sigb=HuKA7L7JBVjk&sigi=iEMjpLMxrf7T&sigt=mWYo3COuXEP.&.crumb=QjVZXa3FMM1&fr=yhs-iba-3&hsimp=yhs-3&hspart=iba&type=msff_9373_FFW_ZZ',
+        imageUrl: doc['imageUrls'],
+        avatarUrl: author.avatar,
+        tags: tags,
+      );
+    }));
+
+    List<Post> result_posts = posts
+        .where((element) =>
+            element.content.toLowerCase().contains(keyword.toLowerCase()))
+        .toList();
+
+    return result_posts.toList();
+  }
+
+  Future<void> createPosts(
+      String content, List<File> imageList, List<String> tags) async {
+    final FirebaseStorage _storage = FirebaseStorage.instance;
+    try {
+      final id = Uuid().v4();
+      final postRef = FirebaseFirestore.instance.collection("posts").doc(id);
+      final List<String> imageUrlList = [];
+      // Tải lên ảnh lên Firebase và lấy URL
+      await Future.wait(imageList.map((file) async {
+        Reference ref = _storage.ref().child('assets/$id');
+        await ref.putFile(file);
+
+        String Url = await ref.getDownloadURL();
+        imageUrlList.add(Url);
+      }));
+      final post = {
+        "content": content,
+        "authorId": FirebaseAuth.instance.currentUser?.uid,
+        "imageUrls": imageUrlList,
+        "createAt": Timestamp.now(),
+        "updateAt": null,
+        "comments": [],
+        "tags": tags,
+      };
+      await postRef.set(post);
+    } catch (e) {
+      print("Error writing document: $e");
+    }
+  }
+
+  Future<void> likePost(String postId) async {
+    // Get the Firebase Firestore instance
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId == '') {
+      return;
+    }
+    final likedFlag = await isPostLikedByUser(postId, userId);
+    if (likedFlag) {
+      await firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('liked')
+          .doc(userId)
+          .delete();
+    } else {
+      // Get the current user document from the 'users' collection
+      final userInfo = await userService.getUserById(userId);
+
+      // Add the user document to the 'likes' subcollection of the post document
+      await firestore
+          .collection('posts')
+          .doc(postId)
+          .collection('liked')
+          .doc(userId)
+          .set({
+        'userId': userId,
+        'username': userInfo?.username,
+        'userAvatarUrl': userInfo?.avatar,
+        'timestamp': Timestamp.now(),
+      });
+    }
+  }
+
+  Future<bool> isPostLikedByUser(String postId, String userId) async {
+    final DocumentReference postRef =
+        FirebaseFirestore.instance.collection('posts').doc(postId);
+    final DocumentSnapshot postDoc = await postRef.get();
+    final CollectionReference likedRef = postDoc.reference.collection('liked');
+    final DocumentSnapshot likeDoc = await likedRef.doc(userId).get();
+    return likeDoc.exists;
+  }
+
+  Future<List<Post>> getPostsByTag(String tagId) async {
+    final postsRef = FirebaseFirestore.instance.collection('posts');
+    final postsSnapshot =
+        await postsRef.where('tags', arrayContains: tagId).get();
+    final posts = postsSnapshot.docs.map((doc) async {
+      final id = doc.id;
+      // get num likes
+      final likesRef = doc.reference.collection('liked');
+      final likesSnapshot = await likesRef.get();
+      final numLikes = likesSnapshot.size;
+
+      // get createAt
+      final Timestamp createAt;
+      createAt = doc["createAt"];
+      DateTime createAtDateTime = createAt.toDate();
+      DateTime now = DateTime.now();
+      Duration difference = now.difference(createAtDateTime);
+      String timeAgo = '';
+      if (difference.inDays < 31) {
+        timeAgo = difference.toString() + " ngày trước";
+      } else if (difference.inDays < 365) {
+        difference = difference ~/ 30;
+        timeAgo = difference.toString() + " tháng trước";
+      } else {
+        difference = difference ~/ 365;
+        timeAgo = difference.toString() + " năm trước";
+      }
+      // get author info
+      final author = await userService.getUserById(doc['authorId']);
+
+      List<Future<Tag>> tagFutures = [];
+      for (int i = 0; i < doc['tags'].length; i++) {
+        tagFutures.add(tagService.getTagById(doc['tags'][i]));
+      }
+      final tags = await Future.wait(tagFutures);
+      return Post(
+        id: id,
+        author: author!.username,
+        timeAgo: timeAgo,
+        content: doc['content'].toString(),
+        likes: numLikes,
+        comments: doc['comments'],
+        shares: 3,
+        imageUrl: doc['imageUrls'],
+        avatarUrl: author.avatar,
+        tags: tags,
       );
     }).toList();
 
