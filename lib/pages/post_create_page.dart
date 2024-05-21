@@ -120,6 +120,7 @@ class _PostScreenState extends State<PostScreen> {
             SelectedTagsWidget(
               selectedTags: _selectedTags,
               tags: _tagsList,
+              onTagUnselected: (tagId) {},
             ),
             SizedBox(height: 20),
             ValueListenableBuilder(
@@ -267,6 +268,7 @@ class SelectedTagsWidget extends StatelessWidget {
   const SelectedTagsWidget({
     required this.selectedTags,
     required this.tags,
+    required Null Function(dynamic tagId) onTagUnselected,
   });
 
   @override

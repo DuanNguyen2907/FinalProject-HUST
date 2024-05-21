@@ -66,6 +66,60 @@ class PostService {
     return await Future.wait(posts);
   }
 
+  Future<Post> getPostById(String postId) async {
+    final postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+    final postSnapshot = await postRef.get();
+
+    if (postSnapshot.exists) {
+      final postDoc = postSnapshot.data() as Map<String, dynamic>;
+
+      // Get number of likes
+      final likesRef = postRef.collection('liked');
+      final likesSnapshot = await likesRef.get();
+      final numLikes = likesSnapshot.size;
+
+      // Get createdAt
+      final Timestamp createdAt = postDoc['createdAt'];
+      final DateTime createdAtDateTime = createdAt.toDate();
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(createdAtDateTime);
+      String timeAgo = '';
+      if (difference.inDays < 31) {
+        timeAgo = '${difference.inDays} ngày trước';
+      } else if (difference.inDays < 365) {
+        final int months = difference.inDays ~/ 30;
+        timeAgo = '$months tháng trước';
+      } else {
+        final int years = difference.inDays ~/ 365;
+        timeAgo = '$years năm trước';
+      }
+
+      // Get author info
+      final author = await userService.getUserById(postDoc['authorId']);
+
+      List<Future<Tag>> tagFutures = [];
+      for (int i = 0; i < postDoc['tags'].length; i++) {
+        tagFutures.add(tagService.getTagById(postDoc['tags'][i]));
+      }
+      final tags = await Future.wait(tagFutures);
+
+      return Post(
+        id: postId,
+        author: author!.username,
+        timeAgo: timeAgo,
+        content: postDoc['content'].toString(),
+        likes: numLikes,
+        comments: postDoc['comments'],
+        shares: 3,
+        imageUrl: postDoc['imageUrls'],
+        avatarUrl: author.avatar,
+        tags: tags,
+      );
+    } else {
+      throw Exception('Post not found');
+    }
+  }
+
   Future<List<Post>> searchPosts(String keyword) async {
     final QuerySnapshot querySnapshot =
         await FirebaseFirestore.instance.collection('posts').get();
@@ -145,6 +199,41 @@ class PostService {
         "tags": tags,
       };
       await postRef.set(post);
+    } catch (e) {
+      print("Error writing document: $e");
+    }
+  }
+
+  Future<void> updatePost(
+    String postId,
+    String content,
+    List<File> imageList,
+    List<String> tags,
+  ) async {
+    final FirebaseStorage _storage = FirebaseStorage.instance;
+    try {
+      final postRef =
+          FirebaseFirestore.instance.collection("posts").doc(postId);
+      final List<String> imageUrlList = [];
+      // Tải lên ảnh lên Firebase và lấy URL
+      await Future.wait(imageList.map((file) async {
+        Reference ref =
+            _storage.ref().child('assets/$postId/${file.path.split('/').last}');
+        await ref.putFile(file);
+
+        String Url = await ref.getDownloadURL();
+        imageUrlList.add(Url);
+      }));
+      final post = {
+        "content": content,
+        "authorId": FirebaseAuth.instance.currentUser?.uid,
+        "imageUrls": imageUrlList,
+        "createAt": Timestamp.now(),
+        "updateAt": Timestamp.now(),
+        "comments": [],
+        "tags": tags,
+      };
+      await postRef.update(post);
     } catch (e) {
       print("Error writing document: $e");
     }
@@ -243,5 +332,62 @@ class PostService {
     }).toList();
 
     return await Future.wait(posts);
+  }
+
+  Future<List<Post>> getPostsByUserId(String userId) async {
+    final postsRef = FirebaseFirestore.instance.collection('posts');
+    final postsSnapshot =
+        await postsRef.where('authorId', isEqualTo: userId).get();
+    final posts = <Post>[];
+    for (final doc in postsSnapshot.docs) {
+      final id = doc.id;
+      // get num likes
+      final likesRef = doc.reference.collection('liked');
+      final likesSnapshot = await likesRef.get();
+      final numLikes = likesSnapshot.size;
+
+      // get createAt
+      final Timestamp createAt = doc["createAt"];
+      final createAtDateTime = createAt.toDate();
+      final now = DateTime.now();
+      final difference = now.difference(createAtDateTime);
+      String timeAgo = '';
+      if (difference.inDays < 31) {
+        timeAgo = '${difference.inDays} ngày trước';
+      } else if (difference.inDays < 365) {
+        final differenceInMonths = difference.inDays ~/ 30;
+        timeAgo = '$differenceInMonths tháng trước';
+      } else {
+        final differenceInYears = difference.inDays ~/ 365;
+        timeAgo = '$differenceInYears năm trước';
+      }
+
+      // get author info
+      final author = await userService.getUserById(doc['authorId']);
+
+      final tagFutures = <Future<Tag>>[];
+      for (final tagId in doc['tags']) {
+        tagFutures.add(tagService.getTagById(tagId));
+      }
+      final tags = await Future.wait(tagFutures);
+
+      posts.add(Post(
+        id: id,
+        author: author!.username,
+        timeAgo: timeAgo,
+        content: doc['content'].toString(),
+        likes: numLikes,
+        comments: doc['comments'],
+        shares: 3,
+        imageUrl: doc['imageUrls'],
+        avatarUrl: author.avatar,
+        tags: tags,
+      ));
+    }
+    return posts;
+  }
+
+  Future<void> deletePost(String postId) async {
+    await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
   }
 }

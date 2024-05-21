@@ -21,11 +21,11 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+      // final UserCredential userCredential =
+      //     await _auth.signInWithEmailAndPassword(
+      //   email: _emailController.text,
+      //   password: _passwordController.text,
+      // );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => NavigationExample()),

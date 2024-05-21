@@ -1,6 +1,8 @@
 import 'package:app_project/domain/post.dart';
 import 'package:app_project/domain/user.dart';
+import 'package:app_project/pages/edit_post_page.dart';
 import 'package:app_project/pages/login_page.dart';
+import 'package:app_project/services/postService.dart';
 import 'package:app_project/services/userService.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,12 +18,109 @@ class UserInfoPage extends StatelessWidget {
       body: Column(
         children: [
           UserInfoPart(),
-          // UserPosts(),
+          Expanded(
+            child: PostList(),
+          ),
           SignOutButton(),
         ],
       ),
     );
   }
+}
+
+class PostList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final PostService postService = PostService();
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    return FutureBuilder<List<Post>>(
+      future: postService.getPostsByUserId(currentUserId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasData) {
+            final posts = snapshot.data!;
+            return ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return PostCard(post: post);
+              },
+            );
+          } else {
+            return Text('No posts found');
+          }
+        } else {
+          return CircularProgressIndicator();
+        }
+      },
+    );
+  }
+}
+
+class PostCard extends StatelessWidget {
+  final Post post;
+
+  const PostCard({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Image.network(post.imageUrl[0]),
+        title: Text(post.content.length > 50
+            ? post.content.substring(0, 50) + '...'
+            : post.content),
+        subtitle: Text('${post.timeAgo} - ${post.author}'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditPostScreen(
+                      postId: post.id,
+                    ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                _showPopup(
+                    context, "Bạn chắc chắn muốn xoá post chứ !", post.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showPopup(BuildContext context, String message, String postId) {
+  final PostService postService = PostService();
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              postService.deletePost(postId);
+              Navigator.of(context).pop();
+            },
+            child: Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class UserInfoPart extends StatelessWidget {
@@ -100,38 +199,6 @@ class UserInfoPart extends StatelessWidget {
     );
   }
 }
-
-// class UserPosts extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     final UserService userService = Provider.of<UserService>(context);
-//     final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
-//     return FutureBuilder<List<Post>>(
-//       future: userService.getUserPosts(currentUserId),
-//       builder: (context, snapshot) {
-//         if (snapshot.connectionState == ConnectionState.done) {
-//           if (snapshot.hasData) {
-//             List<Post> posts = snapshot.data!;
-//             return ListView.builder(
-//               itemCount: posts.length,
-//               itemBuilder: (context, index) {
-//                 return ListTile(
-//                   title: Text(posts[index].author),
-//                   subtitle: Text(posts[index].content),
-//                 );
-//               },
-//             );
-//           } else {
-//             return Text('Error: ${snapshot.error}');
-//           }
-//         } else {
-//           return CircularProgressIndicator();
-//         }
-//       },
-//     );
-//   }
-// }
 
 class SignOutButton extends StatelessWidget {
   @override
