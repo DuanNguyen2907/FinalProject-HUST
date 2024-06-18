@@ -1,12 +1,14 @@
 import 'package:app_project/services/postService.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/post.dart';
 import '../pages/post_detail_page.dart';
 import '../widgets/post.dart';
 
 class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _SearchScreenState createState() => _SearchScreenState();
 }
 
@@ -21,10 +23,10 @@ class _SearchScreenState extends State<SearchPage> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Search'),
+          title: const Text('Search'),
           actions: [
             IconButton(
-              icon: Icon(Icons.search),
+              icon: const Icon(Icons.search),
               onPressed: () {
                 showSearch(
                   context: context,
@@ -46,7 +48,7 @@ class SearchBar extends SearchDelegate<String> {
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
-        icon: Icon(Icons.clear),
+        icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
           close(context, '');
@@ -58,7 +60,7 @@ class SearchBar extends SearchDelegate<String> {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      icon: Icon(Icons.arrow_back),
+      icon: const Icon(Icons.arrow_back),
       onPressed: () {
         close(context, '');
       },
@@ -71,11 +73,11 @@ class SearchBar extends SearchDelegate<String> {
       future: postService.searchPosts(query),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.data!.isEmpty) {
-          return Center(child: Text('No results found'));
+          return const Center(child: Text('No results found'));
         } else {
           return ListView.builder(
             itemCount: snapshot.data!.length,
@@ -106,7 +108,7 @@ class SearchBar extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     return ListView.builder(
-      itemCount: query.length > 0 ? 5 : 0,
+      itemCount: query.isNotEmpty ? 5 : 0,
       itemBuilder: (context, index) {
         return ListTile(
           title: Text('$query $index'),

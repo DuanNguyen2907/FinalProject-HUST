@@ -154,7 +154,7 @@ class _PostActionsState extends State<_PostActions> {
     final userId = FirebaseAuth.instance.currentUser!.uid;
     final isLiked =
         await widget.postService.isPostLikedByUser(widget.post.id, userId);
-    if (mounted) {
+    if (isLiked) {
       setState(() {
         _isLiked = isLiked;
       });

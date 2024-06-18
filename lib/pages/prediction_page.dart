@@ -4,73 +4,135 @@ import 'package:app_project/services/symptomService.dart';
 import 'package:flutter/material.dart';
 
 class SymptomPage extends StatefulWidget {
+  const SymptomPage({super.key});
+
   @override
-  _SymptomPageState createState() => _SymptomPageState();
+  // ignore: library_private_types_in_public_api
+  _SymptomPredictionPageState createState() => _SymptomPredictionPageState();
 }
 
-class _SymptomPageState extends State<SymptomPage> {
+class _SymptomPredictionPageState extends State<SymptomPage> {
+  PredictionService predictionService = PredictionService();
   final SymptomService symptomService = SymptomService();
-  final Set<Symptom> _selectedSymptoms = {};
-  final List<String> symptomsSelected = []; // Use a Set for selected symptoms
+  List<Symptom>? symptoms;
+  String searchQuery = '';
+  List<String> selectedSymptoms = [];
+  List<String> symptomsSelected = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSymptoms();
+  }
+
+  Future<void> _fetchSymptoms() async {
+    symptoms = await symptomService.getAllSymptoms();
+    setState(() {});
+  }
+
+  void _onSymptomTap(Symptom symptom) {
+    if (!selectedSymptoms.contains(symptom.vietnameseName)) {
+      selectedSymptoms.add(symptom.vietnameseName);
+      searchQuery = '';
+    }
+    if (!symptomsSelected.contains(symptom.englishName)) {
+      symptomsSelected.add(symptom.englishName);
+      searchQuery = '';
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Symptom Page'),
+        title: const Text('Dự đoán bệnh trong'),
       ),
-      body: FutureBuilder<List<Symptom>>(
-        future: symptomService.getAllSymptoms(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingIndicator();
-          } else if (snapshot.hasError) {
-            return _buildErrorIndicator(snapshot.error);
-          } else {
-            return _buildSymptomList(snapshot.data ?? []);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return Center(child: CircularProgressIndicator());
-  }
-
-  Widget _buildErrorIndicator(Object? error) {
-    return Center(
-      child: Text('Error loading symptoms: ${error ?? 'Unknown error'}'),
-    );
-  }
-
-  Widget _buildSymptomList(List<Symptom> symptoms) {
-    final groupedSymptoms = _groupSymptomsByCategory(symptoms);
-    PredictionService predictionService = PredictionService();
-
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            itemCount: groupedSymptoms.length,
-            itemBuilder: (context, index) {
-              final className = groupedSymptoms.keys.elementAt(index);
-              final classSymptoms = groupedSymptoms[className] ?? [];
-
-              return _buildExpansionTile(className, classSymptoms);
-            },
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            child: Wrap(
+              children: selectedSymptoms.map((symptom) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    setState(() {
+                      _deleteSymtoms(symptom);
+                      print(selectedSymptoms);
+                    });
+                  },
+                  child: Chip(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 2), // reduced padding
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(symptom),
+                        const Icon(Icons.close, size: 12),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            // Handle the selected symptoms (e.g., save to database)
-            print('Selected symptoms: $symptomsSelected');
-            final result = await predictionService.sendData(symptomsSelected);
-            _showResultPopup(context, result);
-          },
-          child: Text('Save Selected Symptoms'),
-        ),
-      ],
+          Visibility(
+            visible: symptomsSelected.isNotEmpty,
+            child: ElevatedButton(
+              onPressed: () async {
+                // Handle the selected symptoms (e.g., save to database)
+                print(symptomsSelected);
+                final result =
+                    await predictionService.sendData(symptomsSelected);
+                // ignore: use_build_context_synchronously
+                _showResultPopup(context, result);
+              },
+              child: const Text('Save Selected Symptoms'),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              onChanged: (query) {
+                setState(() {
+                  searchQuery = query;
+                });
+              },
+              decoration: const InputDecoration(
+                hintText: 'Nhập tên triệu chứng...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: symptoms == null ? 0 : symptoms?.length,
+              itemBuilder: (context, index) {
+                final symptom = symptoms?[index];
+                if (symptom!.vietnameseName
+                        .toLowerCase()
+                        .contains(searchQuery.toLowerCase()) &&
+                    !selectedSymptoms.contains(symptom.vietnameseName)) {
+                  return ListTile(
+                    leading: Text('${symptom.id}'), // ID column
+                    title: Text(
+                        '${symptom.vietnameseName} - ${symptom.description}'), // Vietnamese name and description column
+                    subtitle: Text(
+                        '${symptom.category} - ${symptom.englishName}'), // Class and English name column
+                    onTap: () {
+                      _onSymptomTap(symptom);
+                    },
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -79,14 +141,14 @@ class _SymptomPageState extends State<SymptomPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Prediction Result'),
+          title: const Text('Prediction Result'),
           content: Text(result),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -94,43 +156,10 @@ class _SymptomPageState extends State<SymptomPage> {
     );
   }
 
-  Widget _buildExpansionTile(String className, List<Symptom> classSymptoms) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return ExpansionTile(
-          title: Text(className),
-          children: classSymptoms.map((symptom) {
-            return CheckboxListTile(
-              title: Text(symptom.vietnameseName),
-              subtitle: Text(symptom.description),
-              value: symptomsSelected.contains(symptom.englishName),
-              onChanged: (value) {
-                if (value != null) {
-                  if (value) {
-                    _selectedSymptoms.add(symptom);
-                    symptomsSelected.add(symptom.englishName);
-                  } else {
-                    _selectedSymptoms.remove(symptom);
-                    symptomsSelected.remove(symptom.englishName);
-                  }
-                  setState(
-                      () {}); // Only rebuilds the part of the widget tree inside the StatefulBuilder
-                }
-              },
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Map<String, List<Symptom>> _groupSymptomsByCategory(List<Symptom> symptoms) {
-    final groupedSymptoms = <String, List<Symptom>>{};
-
-    for (final symptom in symptoms) {
-      groupedSymptoms.putIfAbsent(symptom.category, () => []).add(symptom);
-    }
-
-    return groupedSymptoms;
+  void _deleteSymtoms(String symptomString) {
+    selectedSymptoms.remove(symptomString);
+    Symptom? foundSymptom = symptoms
+        ?.firstWhere((symptom) => symptom.vietnameseName == symptomString);
+    symptomsSelected.remove(foundSymptom?.englishName);
   }
 }

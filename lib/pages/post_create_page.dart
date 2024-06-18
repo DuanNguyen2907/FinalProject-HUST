@@ -1,14 +1,19 @@
-// post_screen.dart
 import 'dart:io';
 
 import 'package:app_project/domain/tag.dart';
+import '../navigation_example.dart';
 import 'package:app_project/services/postService.dart';
 import 'package:app_project/services/tagService.dart';
+import 'package:app_project/widgets/image_widget.dart';
+import 'package:app_project/widgets/tag_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class PostScreen extends StatefulWidget {
+  const PostScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _PostScreenState createState() => _PostScreenState();
 }
 
@@ -85,8 +90,8 @@ class _PostScreenState extends State<PostScreen> {
       String content = _contentController.text;
       List<File> imageList = _imageList;
       postService.createPosts(content, imageList, _selectedTags);
+      _showPopup(context, "Post bài thành công");
     } else {
-      // Show error message or handle validation error
       print("Form validation failed");
     }
   }
@@ -95,10 +100,10 @@ class _PostScreenState extends State<PostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('New Post'),
+        title: const Text('New Post'),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -106,23 +111,24 @@ class _PostScreenState extends State<PostScreen> {
               images: _imageList,
               onRemoveImage: _removeImage,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _selectImages,
-              child: Text('Choose Images'),
+              child: const Text('Choose Images'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _selectTags,
-              child: Text('Select Tags'),
+              child: const Text('Select Tags'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             SelectedTagsWidget(
               selectedTags: _selectedTags,
               tags: _tagsList,
               onTagUnselected: (tagId) {},
+              onTagChanged: (selectedTags) {},
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ValueListenableBuilder(
               valueListenable: _contentController,
               builder: (context, value, child) {
@@ -139,10 +145,10 @@ class _PostScreenState extends State<PostScreen> {
                 );
               },
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _createPost,
-              child: Text('Post'),
+              child: const Text('Post'),
             ),
           ],
         ),
@@ -151,140 +157,26 @@ class _PostScreenState extends State<PostScreen> {
   }
 }
 
-// image_list_widget.dart
-class ImageListWidget extends StatelessWidget {
-  final List<File> images;
-  final void Function(int) onRemoveImage;
-
-  const ImageListWidget({
-    required this.images,
-    required this.onRemoveImage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return images.isNotEmpty
-        ? Container(
-            height: 200,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              itemBuilder: (context, index) {
-                return Stack(
-                  children: [
-                    Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: FileImage(images[index]),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 5,
-                      right: 5,
-                      child: IconButton(
-                        icon: Icon(Icons.close),
-                        onPressed: () => onRemoveImage(index),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          )
-        : Container();
-  }
-}
-
-// tag_selection_dialog.dart
-class TagSelectionDialog extends StatefulWidget {
-  final List<Tag> tags;
-  final List<String> selectedTags;
-  final void Function(String) onTagSelected;
-  final void Function(String) onTagUnselected;
-
-  const TagSelectionDialog({
-    required this.tags,
-    required this.selectedTags,
-    required this.onTagSelected,
-    required this.onTagUnselected,
-  });
-
-  @override
-  _TagSelectionDialogState createState() => _TagSelectionDialogState();
-}
-
-class _TagSelectionDialogState extends State<TagSelectionDialog> {
-  late final _selectedTags = Set<String>.from(widget.selectedTags);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("Select Tags"),
-      content: SingleChildScrollView(
-        child: Column(
-          children: widget.tags.map((tag) {
-            return CheckboxListTile(
-              title: Text(tag.tagName),
-              value: _selectedTags.contains(tag.id),
-              onChanged: (bool? value) {
-                setState(() {
-                  if (value != null) {
-                    if (value) {
-                      _selectedTags.add(tag.id);
-                      widget.onTagSelected(tag.id);
-                    } else {
-                      _selectedTags.remove(tag.id);
-                      widget.onTagUnselected(tag.id);
-                    }
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ),
-      actions: [
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text("Done"),
-        ),
-      ],
-    );
-  }
-}
-
-// selected_tags_widget.dart
-class SelectedTagsWidget extends StatelessWidget {
-  final List<String> selectedTags;
-  final List<Tag> tags;
-
-  const SelectedTagsWidget({
-    required this.selectedTags,
-    required this.tags,
-    required Null Function(dynamic tagId) onTagUnselected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: selectedTags.map((tagId) {
-        final tag = tags.firstWhere((t) => t.id == tagId);
-        return Chip(
-          label: Text(tag.tagName),
-          onDeleted: () {
-            // TODO: Remove tag from selectedTags
-          },
-        );
-      }).toList(),
-    );
-  }
+void _showPopup(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NavigationExample(),
+                ),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }

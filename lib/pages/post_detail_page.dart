@@ -1,29 +1,33 @@
-import 'package:app_project/domain/user.dart';
-import 'package:app_project/services/userService.dart';
+import 'package:app_project/services/postService.dart';
 import 'package:flutter/material.dart';
 import '../domain/post.dart';
 
 class PostDetail extends StatefulWidget {
   final Post post;
-  final UserService userService = UserService();
 
-  PostDetail({
+  const PostDetail({
+    super.key,
     required this.post,
   });
 
   @override
+  // ignore: library_private_types_in_public_api
   _PostDetailState createState() => _PostDetailState();
 }
 
 class _PostDetailState extends State<PostDetail> {
   final _commentController = TextEditingController();
-  UserService userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Post Detail'),
+        title: const Text('Post Detail'),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -40,7 +44,15 @@ class _PostDetailState extends State<PostDetail> {
               padding: const EdgeInsets.all(8.0),
               child: Text(widget.post.content),
             ),
-            Image.network(widget.post.imageUrl[0]),
+            const SizedBox(height: 16),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(),
+              children: widget.post.imageUrl.map((url) {
+                return Image.network(url);
+              }).toList(),
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -52,38 +64,22 @@ class _PostDetailState extends State<PostDetail> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
-            Text('Comments', style: TextStyle(fontSize: 20)),
-            SizedBox(height: 16),
-            FutureBuilder<List<AAA?>>(
-              future: Future.wait(widget.post.comments
-                  .map((comment) =>
-                      widget.userService.getUserById(comment['userId']))
-                  .toList()),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else {
-                  final users = snapshot.data!;
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: ClampingScrollPhysics(),
-                    itemCount: widget.post.comments.length,
-                    itemBuilder: (context, index) {
-                      final comment = widget.post.comments[index];
-                      final user = users[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(user!.avatar),
-                        ),
-                        title: Text(user.username),
-                        subtitle: Text(comment['content']),
-                      );
-                    },
-                  );
-                }
+            const SizedBox(height: 16),
+            const Text('Comments', style: TextStyle(fontSize: 20)),
+            const SizedBox(height: 16),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(),
+              itemCount: widget.post.comments.length,
+              itemBuilder: (context, index) {
+                final comment = widget.post.comments[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(comment['avatar']),
+                  ),
+                  title: Text(comment["username"]),
+                  subtitle: Text(comment["content"]),
+                );
               },
             ),
             Padding(
@@ -93,26 +89,19 @@ class _PostDetailState extends State<PostDetail> {
                   Expanded(
                     child: TextField(
                       controller: _commentController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         hintText: 'Add a comment...',
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () async {
-                      // Add comment logic here
-                      // final comment = {
-                      //   'userId': widget.userService.currentUser.id,
-                      //   'content': _commentController.text,
-                      // };
-                      // widget.post.comments.add(comment);
-                      // Update the post comments in the database
-                      //...
+                      _comment(widget.post.id, _commentController.text);
                       _commentController.clear();
                     },
-                    child: Text('Comment'),
+                    child: const Text('Comment'),
                   ),
                 ],
               ),
@@ -121,5 +110,10 @@ class _PostDetailState extends State<PostDetail> {
         ),
       ),
     );
+  }
+
+  Future<void> _comment(String postId, String comment) async {
+    PostService postService = PostService();
+    postService.addComment(postId, comment);
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:app_project/pages/login_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -8,19 +7,23 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  TextEditingController _usernameController = TextEditingController();
-  TextEditingController _addressController = TextEditingController();
-  TextEditingController _dobController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _phoneController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
-  TextEditingController _rePasswordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _rePasswordController = TextEditingController();
   String _avatarImagePath = '';
+  // ignore: non_constant_identifier_names
   late Timestamp time_dob;
 
   Future<void> _selectAvatarImage() async {
@@ -36,9 +39,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp() async {
     try {
-      final FirebaseAuth _auth = FirebaseAuth.instance;
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-      final FirebaseStorage _storage = FirebaseStorage.instance;
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final FirebaseStorage storage = FirebaseStorage.instance;
 
       String username = _usernameController.text;
       String email = _emailController.text;
@@ -58,7 +61,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       print("hello");
       // create auth user
       final UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+          await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -66,12 +69,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // add image to firebase
       File file = File(_avatarImagePath);
       String uid = userCredential.user!.uid;
-      Reference ref = _storage.ref().child('avatars/$uid');
+      Reference ref = storage.ref().child('avatars/$uid');
       await ref.putFile(file);
 
       // create user info
       String imageURL = await ref.getDownloadURL();
-      await _firestore.collection('users').doc(uid).set({
+      await firestore.collection('users').doc(uid).set({
         'username': username,
         'address': address,
         'dob': time_dob,
@@ -79,10 +82,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         'phone': phone,
         'avatar': imageURL,
       });
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
-      );
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => LoginPage()),
+      // );
     } catch (e) {
       // Handle sign up errors
       print('Sign up failed: $e');
@@ -93,10 +96,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sign Up'),
+        title: const Text('Sign Up'),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -106,15 +109,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 radius: 50,
                 backgroundImage: _avatarImagePath.isNotEmpty
                     ? FileImage(File(_avatarImagePath)) as ImageProvider<Object>
-                    : AssetImage('assets/avatar.png'),
+                    : const AssetImage('assets/avatar.png'),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _usernameController,
               decoration: InputDecoration(
                 labelText: 'UserName',
-                prefixIcon: Icon(Icons.person),
+                prefixIcon: const Icon(Icons.person),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -123,12 +126,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _addressController,
               decoration: InputDecoration(
                 labelText: 'Address',
-                prefixIcon: Icon(Icons.location_pin),
+                prefixIcon: const Icon(Icons.location_pin),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -137,7 +140,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _dobController,
               onTap: () async {
@@ -156,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               },
               decoration: InputDecoration(
                 labelText: 'Date of birth',
-                prefixIcon: Icon(Icons.date_range),
+                prefixIcon: const Icon(Icons.date_range),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -165,12 +168,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
+                prefixIcon: const Icon(Icons.email),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -179,12 +182,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _phoneController,
               decoration: InputDecoration(
                 labelText: 'Phone',
-                prefixIcon: Icon(Icons.phone),
+                prefixIcon: const Icon(Icons.phone),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -193,12 +196,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _passwordController,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -207,17 +210,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 suffixIcon: IconButton(
                   onPressed: () {},
-                  icon: Icon(Icons.visibility_off),
+                  icon: const Icon(Icons.visibility_off),
                 ),
               ),
               obscureText: true,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextFormField(
               controller: _rePasswordController,
               decoration: InputDecoration(
                 labelText: 'Re-enter Password',
-                prefixIcon: Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock),
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
@@ -226,15 +229,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 suffixIcon: IconButton(
                   onPressed: () {},
-                  icon: Icon(Icons.visibility_off),
+                  icon: const Icon(Icons.visibility_off),
                 ),
               ),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _signUp,
-              child: Text('Sign Up'),
+              child: const Text('Sign Up'),
             ),
           ],
         ),
@@ -253,7 +256,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         );

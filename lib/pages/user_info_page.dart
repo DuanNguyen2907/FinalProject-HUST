@@ -1,6 +1,7 @@
 import 'package:app_project/domain/post.dart';
 import 'package:app_project/domain/user.dart';
 import 'package:app_project/pages/edit_post_page.dart';
+import 'package:app_project/pages/edit_user_info_page.dart';
 import 'package:app_project/pages/login_page.dart';
 import 'package:app_project/services/postService.dart';
 import 'package:app_project/services/userService.dart';
@@ -9,13 +10,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class UserInfoPage extends StatelessWidget {
+  const UserInfoPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Info'),
       ),
-      body: Column(
+      body: const Column(
         children: [
           UserInfoPart(),
           Expanded(
@@ -29,6 +32,8 @@ class UserInfoPage extends StatelessWidget {
 }
 
 class PostList extends StatelessWidget {
+  const PostList({super.key});
+
   @override
   Widget build(BuildContext context) {
     final PostService postService = PostService();
@@ -48,10 +53,10 @@ class PostList extends StatelessWidget {
               },
             );
           } else {
-            return Text('No posts found');
+            return const Text('No posts found');
           }
         } else {
-          return CircularProgressIndicator();
+          return const CircularProgressIndicator();
         }
       },
     );
@@ -61,7 +66,7 @@ class PostList extends StatelessWidget {
 class PostCard extends StatelessWidget {
   final Post post;
 
-  const PostCard({required this.post});
+  const PostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -69,14 +74,14 @@ class PostCard extends StatelessWidget {
       child: ListTile(
         leading: Image.network(post.imageUrl[0]),
         title: Text(post.content.length > 50
-            ? post.content.substring(0, 50) + '...'
+            ? '${post.content.substring(0, 50)}...'
             : post.content),
         subtitle: Text('${post.timeAgo} - ${post.author}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: Icon(Icons.edit),
+              icon: const Icon(Icons.edit),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -89,7 +94,7 @@ class PostCard extends StatelessWidget {
               },
             ),
             IconButton(
-              icon: Icon(Icons.delete),
+              icon: const Icon(Icons.delete),
               onPressed: () {
                 _showPopup(
                     context, "Bạn chắc chắn muốn xoá post chứ !", post.id);
@@ -115,7 +120,7 @@ void _showPopup(BuildContext context, String message, String postId) {
               postService.deletePost(postId);
               Navigator.of(context).pop();
             },
-            child: Text('OK'),
+            child: const Text('OK'),
           ),
         ],
       );
@@ -124,6 +129,8 @@ void _showPopup(BuildContext context, String message, String postId) {
 }
 
 class UserInfoPart extends StatelessWidget {
+  const UserInfoPart({super.key});
+
   @override
   Widget build(BuildContext context) {
     final UserService userService = UserService();
@@ -133,29 +140,40 @@ class UserInfoPart extends StatelessWidget {
       future: userService.getUserById(currentUserId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return _buildUserDetails(snapshot);
+          return _buildUserDetails(snapshot, context);
         } else {
-          return CircularProgressIndicator();
+          return const CircularProgressIndicator();
         }
       },
     );
   }
 
-  Widget _buildUserDetails(AsyncSnapshot<AAA?> snapshot) {
+  Widget _buildUserDetails(AsyncSnapshot<AAA?> snapshot, BuildContext context) {
     if (snapshot.hasData) {
       final AAA user = snapshot.data!;
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildAvatar(user.avatar),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           ..._buildUserInfo(user),
+          const SizedBox(height: 16.0),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const EditUserInfoPage()),
+              );
+            },
+            child: const Text('Edit'),
+          ),
         ],
       );
     } else if (snapshot.hasError) {
       return Text('Error: ${snapshot.error}');
     } else {
-      return Text('User not found');
+      return const Text('User not found');
     }
   }
 
@@ -176,22 +194,22 @@ class UserInfoPart extends StatelessWidget {
 
   Widget _buildInfoRow(String label, String value) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 50),
+      padding: const EdgeInsets.symmetric(horizontal: 50),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.left,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ],
@@ -201,6 +219,8 @@ class UserInfoPart extends StatelessWidget {
 }
 
 class SignOutButton extends StatelessWidget {
+  const SignOutButton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(

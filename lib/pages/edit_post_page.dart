@@ -1,28 +1,32 @@
-// edit_post_screen.dart
 import 'dart:io';
 
 import 'package:app_project/domain/tag.dart';
-import 'package:app_project/pages/post_create_page.dart';
+import 'package:app_project/navigation_example.dart';
 import 'package:app_project/services/postService.dart';
 import 'package:app_project/services/tagService.dart';
+import 'package:app_project/widgets/image_widget.dart';
+import 'package:app_project/widgets/tag_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditPostScreen extends StatefulWidget {
   final String postId;
 
-  const EditPostScreen({required this.postId});
+  const EditPostScreen({super.key, required this.postId});
 
   @override
+  // ignore: library_private_types_in_public_api
   _EditPostScreenState createState() => _EditPostScreenState();
 }
 
 class _EditPostScreenState extends State<EditPostScreen> {
   late final _contentController = TextEditingController();
-  late final _imageList = <File>[];
+  late final _imageNewList = <File>[];
+  late final _imageOldUrlList = <String>[];
   late var _tagsList = <Tag>[];
-  late final _selectedTags = <String>[];
+  late var _selectedTags = <String>[];
   late final postService = PostService();
+  late final tagService = TagService();
 
   @override
   void initState() {
@@ -32,20 +36,24 @@ class _EditPostScreenState extends State<EditPostScreen> {
   }
 
   Future<void> _fetchTags() async {
-    final tags = await TagService().getAllTags();
+    final tags = await tagService.getAllTags();
     setState(() {
       _tagsList = tags;
     });
   }
 
   Future<void> _fetchPostDetails() async {
-    final post = await postService.getPostById(widget.postId);
-    setState(() {
-      _contentController.text = post.content;
-      _imageList
-          .addAll(post.imageUrl.map((url) => File.fromUri(Uri.parse(url))));
-      _selectedTags.addAll(post.tags.map((tag) => tag.id));
-    });
+    try {
+      final post = await postService.getPostById(widget.postId);
+      setState(() {
+        _contentController.text = post.content;
+        _imageOldUrlList.addAll(post.imageUrl.map((url) => url));
+        _selectedTags.addAll(post.tags.map((tag) => tag.id));
+      });
+    } catch (e) {
+      // Handle exceptions here
+      print('Error fetching post details: $e');
+    }
   }
 
   Future<void> _selectImages() async {
@@ -54,61 +62,32 @@ class _EditPostScreenState extends State<EditPostScreen> {
 
     if (pickedImage != null) {
       setState(() {
-        _imageList.add(File(pickedImage.path));
+        _imageNewList.add(File(pickedImage.path));
       });
     }
   }
 
   void _removeImage(int index) {
     setState(() {
-      _imageList.removeAt(index);
+      _imageOldUrlList.removeAt(index);
     });
   }
 
-  void _selectTags() async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return TagSelectionDialog(
-          tags: _tagsList,
-          selectedTags: _selectedTags,
-          onTagSelected: (tagId) {
-            setState(() {
-              if (!_selectedTags.contains(tagId)) {
-                _selectedTags.add(tagId);
-              }
-            });
-          },
-          onTagUnselected: (tagId) {
-            setState(() {
-              _selectedTags.remove(tagId);
-            });
-          },
-        );
-      },
-    );
+  void _removeNewImage(int index) {
+    setState(() {
+      _imageNewList.removeAt(index);
+    });
   }
 
-  bool _validateForm() {
-    if (_contentController.text.isEmpty) {
-      return false;
-    }
-    if (_imageList.isEmpty) {
-      return false;
-    }
-    return true;
-  }
-
-  void _updatePost() {
-    if (_validateForm()) {
-      String content = _contentController.text;
-      List<File> imageList = _imageList;
-      List<Tag> selectedTagObjects =
-          _tagsList.where((tag) => _selectedTags.contains(tag.id)).toList();
-      postService.updatePost(widget.postId, content, imageList, _selectedTags);
-    } else {
-      // Show error message or handle validation error
-      print("Form validation failed");
+  Future<void> _savePost() async {
+    try {
+      await postService.updatePost(widget.postId, _contentController.text,
+          _imageNewList, _imageOldUrlList, _selectedTags);
+      // ignore: use_build_context_synchronously
+      _showPopup(context, "Chỉnh sửa thành công!");
+    } catch (e) {
+      // Handle exceptions here
+      print('Error saving post: $e');
     }
   }
 
@@ -116,59 +95,89 @@ class _EditPostScreenState extends State<EditPostScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Post'),
+        title: const Text('Edit Post'),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(20),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _contentController,
-              decoration: InputDecoration(
-                labelText: 'Content',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ElevatedButton(
-                  onPressed: _selectImages,
-                  child: Text('Select Images'),
-                ),
-                ElevatedButton(
-                  onPressed: _selectTags,
-                  child: Text('Select Tags'),
-                ),
+                _imageOldUrlList.isNotEmpty
+                    ? Expanded(
+                        child: OldImageListWidget(
+                          imageUrls: _imageOldUrlList,
+                          onRemoveImage: _removeImage,
+                        ),
+                      )
+                    : Container(),
+                const SizedBox(width: 8.0),
+                _imageNewList.isNotEmpty
+                    ? Expanded(
+                        child: ImageListWidget(
+                          images: _imageNewList,
+                          onRemoveImage: _removeNewImage,
+                        ),
+                      )
+                    : const Text('No images selected'),
               ],
             ),
-            SizedBox(height: 20),
-            ImageListWidget(
-              images: _imageList,
-              onRemoveImage: _removeImage,
-            ),
-            SizedBox(height: 20),
             SelectedTagsWidget(
-              tags: _tagsList
-                  .where((tag) => _selectedTags.contains(tag.id))
-                  .toList(),
-              onTagUnselected: (tagId) {
+              tags: _tagsList,
+              selectedTags: _selectedTags,
+              onTagChanged: (selectedTags) {
                 setState(() {
-                  _selectedTags.remove(tagId);
+                  _selectedTags = selectedTags;
                 });
               },
-              selectedTags: [],
+              onTagUnselected: (tagId) {},
             ),
-            SizedBox(height: 20),
+            Expanded(
+              child: TextField(
+                controller: _contentController,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
             ElevatedButton(
-              onPressed: _updatePost,
-              child: Text('Update Post'),
+              onPressed: _selectImages,
+              child: const Text('Add Images'),
+            ),
+            ElevatedButton(
+              onPressed: _savePost,
+              child: const Text('Save'),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+void _showPopup(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NavigationExample(),
+                ),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }
